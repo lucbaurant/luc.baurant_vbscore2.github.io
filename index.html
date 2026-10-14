@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Marquoir</title>
+<style>
+:root{color-scheme:dark;--bg:#14161a;--panel:#1d2026;--line:#2b2f37;--ink:#f2f0ea;--muted:#8b909a;--bw:#ff7814;--vis:#2878ff;--tm:#ffdc00;--ok:#3ecf74;--bad:#ff5a4f;
+--num:"Barlow Condensed","Arial Narrow",Impact,sans-serif;--ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.3 var(--ui);padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);display:flex;flex-direction:column;gap:10px;max-width:520px;margin:0 auto}
+button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 10px;min-height:48px;touch-action:manipulation}
+button:active{filter:brightness(1.4)}
+button:focus-visible{outline:3px solid var(--tm);outline-offset:2px}
+header{display:flex;align-items:center;gap:10px;padding-top:8px}
+#dot{width:12px;height:12px;border-radius:50%;background:var(--bad);flex:none}
+#dot.on{background:var(--ok)}
+#status{flex:1;color:var(--muted)}
+#conn,#inst{min-height:40px;padding:8px 14px}
+main{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0;transition:opacity .2s}
+body.off main{opacity:.35;pointer-events:none}
+.team{background:var(--panel);border-left:8px solid var(--c);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center}
+.team.a{--c:var(--bw)}.team.b{--c:var(--vis)}
+.name{font:700 1.5rem var(--num);letter-spacing:.04em;color:var(--c);display:flex;gap:10px;align-items:center}
+.srv{display:none;font:600 .8rem var(--ui);color:var(--bg);background:var(--c);border-radius:20px;padding:2px 10px}
+.team.serving .srv{display:inline-block}
+.score{grid-row:span 2;grid-column:2;font:700 clamp(6rem,30vw,9.5rem)/.85 var(--num);color:var(--c);font-variant-numeric:tabular-nums;text-align:right}
+.meta{display:flex;gap:14px;align-items:center;color:var(--muted)}
+.meta b{color:var(--ink);font:700 1.6rem var(--num)}
+.pips{display:flex;gap:6px}
+.pips i{width:14px;height:14px;border-radius:50%;border:2px solid var(--tm)}
+.pips i.u{background:var(--tm)}
+.btns{grid-column:1/-1;display:grid;grid-template-columns:1fr 2fr;gap:8px}
+.btns button{font:700 2rem var(--num);min-height:64px}
+.btns .plus{background:var(--c);color:#14161a;border:0}
+.sub{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sub button{font-size:.85rem;min-height:44px;padding:8px 4px}
+#mid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center}
+#info{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;padding:0 4px}
+#setn{font:700 1.6rem var(--num)}
+#tm{font:700 2.2rem var(--num);color:var(--tm);visibility:hidden}
+#tm.on{visibility:visible;animation:p 1s steps(2) infinite}
+@keyframes p{50%{opacity:.5}}
+@media(prefers-reduced-motion:reduce){#tm.on{animation:none}}
+#fin.hot{background:var(--tm);color:#14161a;border:0;font-weight:700}
+#fin{grid-column:1/-1}
+#rst{color:var(--bad)}
+</style>
+</head>
+<body class="off">
+<header><span id="dot"></span><span id="status">Non connecté</span><button id="inst" hidden>Installer</button><button id="conn">Connecter</button></header>
+<main>
+<section class="team a" id="tA">
+ <div class="name">BW <span class="srv">au service</span></div><div class="score" id="sA">0</div>
+ <div class="meta">Sets <b id="setA">0</b><span class="pips" id="pA"><i></i><i></i></span></div>
+ <div class="btns"><button data-a="2">−1</button><button class="plus" data-a="1">+1</button></div>
+ <div class="sub"><button data-a="3">Temps mort</button><button data-a="4">Service ici</button><button data-a="5">Sets +1</button></div>
+</section>
+<section id="mid">
+ <div id="info"><span id="setn">Set 1</span><span id="tm"></span></div>
+ <button id="fin" data-a="11">Valider la fin du set</button>
+ <button data-a="12">Changer de côté</button><button id="rst">Remise à zéro</button>
+</section>
+<section class="team b" id="tB">
+ <div class="name">VIS <span class="srv">au service</span></div><div class="score" id="sB">0</div>
+ <div class="meta">Sets <b id="setB">0</b><span class="pips" id="pB"><i></i><i></i></span></div>
+ <div class="btns"><button data-a="7">−1</button><button class="plus" data-a="6">+1</button></div>
+ <div class="sub"><button data-a="8">Temps mort</button><button data-a="9">Service ici</button><button data-a="10">Sets +1</button></div>
+</section>
+</main>
+<script>
+const SVC='6d617271-756f-6972-0001-766f6c6c6579',
+      CMD='6d617271-756f-6972-0002-766f6c6c6579',
+      STA='6d617271-756f-6972-0003-766f6c6c6579';
+const $=id=>document.getElementById(id);
+let dev=null,cmdC=null,tmEnd=0,q=Promise.resolve(),lock=null;
+
+function status(t,on){$('status').textContent=t;$('dot').classList.toggle('on',!!on);document.body.classList.toggle('off',!on)}
+
+// Trame d'état (10 octets) : voir le firmware, section 9c
+function apply(dv){
+ const g=i=>dv.getUint8(i),f=g(7);
+ const sw=!!(f&16),frozen=!!(f&2),over=!!(f&4),tmOn=!!(f&8),tmTeam=g(8);
+ [['A',0,5,1],['B',1,6,0]].forEach(([k,si,ti,srvBit])=>{
+  $('s'+k).textContent=g(si);
+  $('set'+k).textContent=g(si+2);
+  [...$('p'+k).children].forEach((p,i)=>p.classList.toggle('u',i<g(ti)));
+  const serving=k==='A'?!!(f&1):!(f&1);
+  $('t'+k).classList.toggle('serving',serving);
+ });
+ // l'ordre à l'écran suit celui des panneaux LED
+ $('tA').style.order=sw?3:1; $('mid').style.order=2; $('tB').style.order=sw?1:3;
+ $('setn').textContent=over?'Match terminé':(frozen?'Fin de set':'Set '+g(4));
+ $('fin').classList.toggle('hot',frozen);
+ tmEnd=tmOn?Date.now()+g(9)*1000:0;
+ $('tm').dataset.team=tmOn?(tmTeam===0?'BW':'VIS'):'';
+ tick();
+}
+function tick(){
+ const el=$('tm');
+ if(!tmEnd){el.classList.remove('on');return}
+ const r=Math.max(0,Math.ceil((tmEnd-Date.now())/1000));
+ el.textContent='TM '+el.dataset.team+' '+r;el.classList.add('on');
+}
+setInterval(tick,250);
+
+function send(a){
+ if(!cmdC||!dev.gatt.connected)return;
+ if(navigator.vibrate)navigator.vibrate(15);
+ const v=new Uint8Array([a]);
+ q=q.then(()=>cmdC.writeValueWithoutResponse?cmdC.writeValueWithoutResponse(v):cmdC.writeValue(v)).catch(()=>{});
+}
+
+async function link(){
+ const srv=await dev.gatt.connect(),s=await srv.getPrimaryService(SVC);
+ cmdC=await s.getCharacteristic(CMD);
+ const st=await s.getCharacteristic(STA);
+ st.addEventListener('characteristicvaluechanged',e=>apply(e.target.value));
+ await st.startNotifications();
+ apply(await st.readValue());
+ status('Connecté à '+dev.name,true);
+ try{lock=await navigator.wakeLock.request('screen')}catch(e){}
+}
+let retrying=false;
+async function onDrop(){
+ cmdC=null;
+ if(retrying)return;
+ retrying=true;
+ for(let i=1;i<=10&&!(dev.gatt.connected&&cmdC);i++){
+  status('Connexion perdue — tentative '+i+'/10');
+  await new Promise(r=>setTimeout(r,2000));
+  try{await link();retrying=false;return}catch(e){}
+ }
+ retrying=false;
+ status('Connexion perdue. Touche Connecter pour reprendre.');
+}
+async function connect(){
+ if(!navigator.bluetooth){status('Web Bluetooth indisponible : ouvre cette page dans Chrome (HTTPS).');return}
+ try{
+  if(!dev){
+   status('Recherche du marquoir…');
+   dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'Marquoir'}],optionalServices:[SVC]});
+   dev.addEventListener('gattserverdisconnected',onDrop);
+  }
+  status('Connexion…');
+  await link();
+ }catch(e){status(e.name==='NotFoundError'?'Aucun marquoir choisi.':'Échec : '+e.message)}
+}
+
+$('conn').onclick=connect;
+// Installation : Chrome propose son bandeau ; ce bouton le déclenche à la demande
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('inst').hidden=false});
+$('inst').onclick=async()=>{if(!installEvt)return;installEvt.prompt();await installEvt.userChoice;installEvt=null;$('inst').hidden=true};
+window.addEventListener('appinstalled',()=>{$('inst').hidden=true});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>send(+b.dataset.a));
+$('rst').onclick=()=>{if(confirm('Remettre le match à zéro ? Scores, sets et temps morts seront effacés.'))send(13)};
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden||!dev)return;
+ if(dev.gatt.connected)navigator.wakeLock?.request('screen').then(l=>lock=l).catch(()=>{});
+ else onDrop();
+});
+</script>
+</body>
+</html>
